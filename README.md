@@ -42,7 +42,6 @@ For detailed MCP server setup instructions, please refer to the README file unde
 - [**Firecrawl**](mcp_servers/firecrawl/README.md): For web crawling and data collection
 - [**Firecrawl Deep Research**](mcp_servers/firecrawl_deep_research/README.md): For deeper web research tasks
 - [**GitHub**](mcp_servers/github/README.md): Perform GitHub repository operations
-- [**Ingress**](mcp_servers/ingress/README.md): Handles incoming requests and routing
 - [**Markitdown**](mcp_servers/markitdown/README.md): Markdown conversion tool
 - [**Postgres**](mcp_servers/postgres/README.md): For PostgreSQL database operations
 - [**Report Generation**](mcp_servers/report_generation/README.md): Create professional reports from various data sources
