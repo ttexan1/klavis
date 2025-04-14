@@ -1,6 +1,8 @@
-<picture>
-  <img src="https://raw.githubusercontent.com/klavis-ai/klavis/main/static/klavis-ai.png">
-</picture>
+<div align="center">
+  <picture>
+    <img src="https://raw.githubusercontent.com/klavis-ai/klavis/main/static/klavis-ai.png" width="80">
+  </picture>
+</div>
 
 <h1 align="center">Making MCPs Accessible for Everyone 🚀</h1>
 
