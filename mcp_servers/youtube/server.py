@@ -39,6 +39,7 @@ if WEBSHARE_PROXY_USERNAME and WEBSHARE_PROXY_PASSWORD:
         proxy_config=WebshareProxyConfig(
             proxy_username=WEBSHARE_PROXY_USERNAME,
             proxy_password=WEBSHARE_PROXY_PASSWORD,
+            retries_when_blocked=50
         )
     )
 else:
@@ -184,7 +185,7 @@ async def get_youtube_video_transcript(
         
         try:
             # Use the initialized API with or without proxy
-            transcript = youtube_transcript_api.get_transcript(video_id)
+            transcript = youtube_transcript_api.fetch(video_id).to_raw_data()
             
             return {
                 "video_id": video_id,
@@ -196,9 +197,7 @@ async def get_youtube_video_transcript(
             video_details = await get_video_details(video_id)
             return {
                 "video_id": video_id,
-                "error": f"Transcript unavailable: {str(transcript_error)}. This could be due to disabled captions, region restrictions, or IP blocking.",
                 "video_details": video_details,
-                "fallback_used": True
             }
     except ValueError as e:
         logger.exception(f"Invalid YouTube URL: {e}")
