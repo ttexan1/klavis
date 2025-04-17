@@ -1,13 +1,14 @@
 import os
 import logging
 import re
-from typing import Any, Dict, Annotated, List, Optional
+from typing import Any, Dict, Annotated
 from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 import aiohttp
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import WebshareProxyConfig
 
 load_dotenv()
 
@@ -18,6 +19,10 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 if not YOUTUBE_API_KEY:
     raise ValueError("YOUTUBE_API_KEY environment variable is required")
 
+# Proxy configuration
+WEBSHARE_PROXY_USERNAME = os.getenv("WEBSHARE_PROXY_USERNAME")
+WEBSHARE_PROXY_PASSWORD = os.getenv("WEBSHARE_PROXY_PASSWORD")
+
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 YOUTUBE_MCP_SERVER_PORT = int(os.getenv("YOUTUBE_MCP_SERVER_PORT", "5000"))
 
@@ -26,6 +31,19 @@ mcp = FastMCP(
     instructions="Retrieve the transcript or video details for a given YouTube video.",
     port=YOUTUBE_MCP_SERVER_PORT,
 )
+
+# Initialize YouTube Transcript API with proxy if credentials are available
+if WEBSHARE_PROXY_USERNAME and WEBSHARE_PROXY_PASSWORD:
+    logger.info("Initializing YouTubeTranscriptApi with Webshare proxy")
+    youtube_transcript_api = YouTubeTranscriptApi(
+        proxy_config=WebshareProxyConfig(
+            proxy_username=WEBSHARE_PROXY_USERNAME,
+            proxy_password=WEBSHARE_PROXY_PASSWORD,
+        )
+    )
+else:
+    logger.info("Initializing YouTubeTranscriptApi without proxy")
+    youtube_transcript_api = YouTubeTranscriptApi()
 
 def _extract_video_id(url: str) -> str:
     """
@@ -164,12 +182,24 @@ async def get_youtube_video_transcript(
         video_id = _extract_video_id(url)
         logger.info(f"Executing tool: get_video_transcript with video_id: {video_id}")
         
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        
-        return {
-            "video_id": video_id,
-            "transcript": transcript
-        }
+        try:
+            # Use the initialized API with or without proxy
+            transcript = youtube_transcript_api.get_transcript(video_id)
+            
+            return {
+                "video_id": video_id,
+                "transcript": transcript
+            }
+        except Exception as transcript_error:
+            logger.warning(f"Error fetching transcript: {transcript_error}. Falling back to video details.")
+            # Fall back to get_video_details
+            video_details = await get_video_details(video_id)
+            return {
+                "video_id": video_id,
+                "error": f"Transcript unavailable: {str(transcript_error)}. This could be due to disabled captions, region restrictions, or IP blocking.",
+                "video_details": video_details,
+                "fallback_used": True
+            }
     except ValueError as e:
         logger.exception(f"Invalid YouTube URL: {e}")
         return {
@@ -177,21 +207,10 @@ async def get_youtube_video_transcript(
         }
     except Exception as e:
         error_message = str(e)
-        logger.exception(f"Error fetching transcript for video URL {url}: {error_message}")
-        try:        
-            # Fall back to get_video_details
-            video_details = await get_video_details(video_id)
-            return {
-                "video_id": video_id,
-                "error": "Transcript unavailable. This could be due to disabled captions or region restrictions.",
-                "video_details": video_details,
-                "fallback_used": True
-            }
-        except Exception as fallback_error:
-            logger.exception(f"Fallback to get_video_details also failed: {fallback_error}")
-            return {
-                "error": f"Failed to fetch transcript and video details: {error_message}"
-            }
+        logger.exception(f"Error processing video URL {url}: {error_message}")
+        return {
+            "error": f"Failed to process request: {error_message}"
+        }
 
 def main():
     mcp.run(transport="sse")
