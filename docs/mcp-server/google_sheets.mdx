@@ -173,10 +173,21 @@ Connect to Google Sheets to create, read, and manage spreadsheets and automate d
 | Tool Name | Description |
 |-----------|-------------|
 | google_sheets_create_spreadsheet | Create a new spreadsheet with a title and optional data |
-| google_sheets_get_spreadsheet | Retrieve spreadsheet properties and cell data for all sheets |
+| google_sheets_get_spreadsheet | Retrieve spreadsheet properties and cell data for all sheets (⚠️ May cause context limits with large spreadsheets) |
+| google_sheets_list_sheets | List all sheets in a spreadsheet (metadata only, no cell data) - **Recommended for discovery** |
+| google_sheets_get_sheet_by_name | Get cell data for a specific sheet by name - **Recommended over get_spreadsheet** |
+| google_sheets_get_range | Get cell data for a specific range using A1 notation (e.g., 'Sheet1!A1:D10') - **Most efficient** |
 | google_sheets_write_to_cell | Write a value to a specific cell in a spreadsheet |
 | google_sheets_list_all_sheets | List all Google Sheets spreadsheets in the user's Google Drive |
 </Accordion>
+
+<Note>
+**Best Practices for Large Spreadsheets:**
+1. Use `google_sheets_list_sheets` first to discover available sheets
+2. Use `google_sheets_get_range` to fetch only the data you need
+3. Use `google_sheets_get_sheet_by_name` when you need a full sheet
+4. Avoid `google_sheets_get_spreadsheet` for spreadsheets with multiple large sheets
+</Note>
 
 <Note>For more details about tool input schema, use the [get_tools](https://www.klavis.ai/docs/api-reference/mcp-server/get-tools) API.</Note>
 
